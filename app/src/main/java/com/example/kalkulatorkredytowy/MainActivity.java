@@ -9,73 +9,102 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
 public class MainActivity extends AppCompatActivity {
-    int N, years, k, amountOfMonths;
-    double r;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-                EditText editText = (EditText) findViewById(R.id.liczba_rat_na_rok);
-                editText.setText("12");      // Standardowa liczba rat w ciągu roku
-                if(savedInstanceState != null){
-                    N = savedInstanceState.getInt("N");             // Kwota kredytu
-                    years = savedInstanceState.getInt("years");     // liczba lat spłaty
-                    k = savedInstanceState.getInt("k");             // liczba rat w ciągu roku (standardowo 12)
-                    r = savedInstanceState.getDouble("r");          // Oprocentowanie
+        if(savedInstanceState != null){
+            N = savedInstanceState.getLong("N");
+            years = savedInstanceState.getInt("years");
+            r = savedInstanceState.getDouble("r");
 
-                    setEditText(N, years, k, r);
-                    getData();
-                    count();
-                    countCostOfCredit();
-                    setValue();
-                }
-            }
+            setEditText(N, years, r);
+            getData();
+            count();
+            countCostOfCredit();
+            setValue();
+        }
+    }
 
+    long N;
+    int years, amountOfMonths;
+    double r;
+    int k = 12;     // liczba rat w ciągu roku
 
-
-    void setEditText(int N, int years, int k, double r){
+    void setEditText(long N, int years, double r){
         EditText editText = (EditText) findViewById(R.id.editTextAmount);
         editText.setText(String.valueOf(N));
 
         editText = (EditText) findViewById(R.id.liczba_lat);
         editText.setText(String.valueOf(years));
 
-        editText = (EditText) findViewById(R.id.liczba_rat_na_rok);
-        editText.setText(String.valueOf(k));
-
         editText = (EditText) findViewById(R.id.interest);
         editText.setText(String.valueOf(r));
     }
 
-    String error;
-    void getData(){
+    public void onClickCount(View view) {
+        if(getData()) {     // Jeżeli dane pobrane z EditText są prawidłowe, poniższe funkcje obliczą kredyt
+            count();
+            countCostOfCredit();
+            setValue();
+        }
+    }
+
+    String error = " Nieprawdidłowe dane \n Nalzeży uzupełnić wszystkie pola";
+    boolean getData(){
         try {
             EditText editText = (EditText) findViewById(R.id.editTextAmount);
             CharSequence buffor = editText.getText();
-            N = Integer.parseInt(buffor.toString());        // Kwota kredytu
+            N = Long.parseLong(buffor.toString());          // Kwota kredytu
+            if(buffor.equals("")) {
+                throw new Exception();
+            }
+            if(N <= 499) {
+                error = "Podaj kwotę kredytu min. 500";
+                throw new IllegalArgumentException();
+            }
+            if(N > 2000000000) {
+                error = "Kwota kredytu jest zbyt duża!";
+                throw new IllegalArgumentException();
+            }
+
 
             editText = (EditText) findViewById(R.id.liczba_lat);
             CharSequence buffor1 = editText.getText();
             years = Integer.parseInt(buffor1.toString());   // liczba lat spłaty
+            if(years > 100) {
+                error = "Liczba lat musi być mniejsza 100";
+                throw new IllegalArgumentException();
+            }
 
-            editText = (EditText) findViewById(R.id.liczba_rat_na_rok);
-            CharSequence buffor2 = editText.getText();
-            k = Integer.parseInt(buffor2.toString());       // liczba rat w ciągu roku (standardowo 12)
 
             editText = (EditText) findViewById(R.id.interest);
             CharSequence buffor3 = editText.getText();
             r = Double.parseDouble(buffor3.toString());     // Oprocentowanie
+            if(r > 50) {
+                error = "Oprocentowanie kredytu nie może być większe niż 50%";
+                throw new IllegalArgumentException();
+            }
+
+
+
             amountOfMonths = years * k;
+            return true;
+        }
+        catch (IllegalArgumentException ex){
+            Toast.makeText(this, error, Toast.LENGTH_LONG).show();
+            return false;
         }
         catch (Exception ex){
-            error = "Nieprawdidłowe dane \n Nalzeży uzupełnić wszystkie pola";
+            error = " Nieprawdidłowe dane \n Nalzeży uzupełnić wszystkie pola";
             Toast.makeText(this, error, Toast.LENGTH_LONG).show();
+            return false;
         }
     }
+
 
     double I, value;
     String valueInstallment;
@@ -87,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
         value = value * 100;
         value = Math.round(value);
         value = value / 100;
-        valueInstallment = String.valueOf(value);
+        valueInstallment = String.format("%,.2f", value);
     }
 
     double costOfCredit, allAmount;
@@ -98,9 +127,13 @@ public class MainActivity extends AppCompatActivity {
         allAmount = allAmount/100;
 
         costOfCredit = allAmount - N;
-        costOfCreditStrg = String.valueOf(costOfCredit);
-        allAmountStr = String.valueOf(allAmount);
+        costOfCredit = Math.round(costOfCredit*100);
+        costOfCredit = costOfCredit/100;
+
+        costOfCreditStrg = String.format("%,.2f", costOfCredit);
+        allAmountStr = String.format("%,.2f", allAmount);
     }
+
 
     void setValue(){
         TextView textView = (TextView) findViewById(R.id.valueOfI);
@@ -113,22 +146,13 @@ public class MainActivity extends AppCompatActivity {
         textView.setText(costOfCreditStrg);
     }
 
-
-    public void onClickCount(View view) {
-        getData();
-        count();
-        countCostOfCredit();
-        setValue();
-    }
-
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState){
         super.onSaveInstanceState(savedInstanceState);
-        savedInstanceState.putInt("N", N);
+        savedInstanceState.putLong("N", N);
         savedInstanceState.putInt("years", years);
-        savedInstanceState.putInt("k", k);
         savedInstanceState.putDouble("r", r);
     }
 
-        }
 
+}
